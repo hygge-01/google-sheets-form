@@ -1,0 +1,100 @@
+
+    <!DOCTYPE html>
+    <html lang="zh-Hant">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Google 試算表用量記錄</title>
+        <script src="https://cdn.tailwindcss.com"></script>
+    </head>
+    <body class="flex flex-col items-center justify-center min-h-screen bg-gray-100">
+        <h1 class="text-2xl font-bold mb-5">Google 試算表用量記錄</h1>
+        <form id="entryForm" class="mb-5">
+            <input type="text" id="name" placeholder="姓名" class="border p-2 mr-2" required>
+            <input type="number" id="usage" placeholder="用量" class="border p-2 mr-2" required>
+            <input type="date" id="date" class="border p-2 mr-2" required>
+            <button type="submit" class="bg-blue-500 text-white p-2">新增記錄</button>
+        </form>
+        <hr class="mb-4 w-full">
+        <table class="min-w-[450px] border-collapse border border-gray-300">
+            <thead>
+                <tr>
+                    <th class="border border-gray-300 p-2">姓名</th>
+                    <th class="border border-gray-300 p-2">用量</th>
+                    <th class="border border-gray-300 p-2">日期</th>
+                </tr>
+            </thead>
+            <tbody id="dataTable">
+                <!-- 資料即時顯示僅本地 -->
+            </tbody>
+        </table>
+        <script>
+            document.getElementById('entryForm').addEventListener('submit', async function(event) {
+                event.preventDefault();
+
+                const name = document.getElementById('name').value;
+                const usage = document.getElementById('usage').value;
+                const date = document.getElementById('date').value;
+
+                // 使用您的 Google Apps Script 網頁應用程式 URL
+                const url = 'https://script.google.com/macros/s/AKfycby5wY-04k6mIkwKAne8DnIywH5oORDCnl3Z1OZkWReHlOZd4_MGYOz7jShnnCaECcpp/exec';
+
+                try {
+                    const response = await fetch(url, {
+                        method: 'POST',
+                        body: JSON.stringify({ name, usage, date }),
+                        headers: { 'Content-Type': 'application/json' }
+                    });
+
+                    if (!response.ok) {
+                        const errorResponse = await response.json();
+                        alert(`新增失敗，狀態：${response.status}，訊息：${errorResponse.message}`);
+                        return; // 退出函數
+                    }
+
+                    const resData = await response.json();
+                    if (resData.status === "success") {
+                        const dataTable = document.getElementById('dataTable');
+                        const row = `<tr>
+                                        <td class="border border-gray-300 p-2">${name}</td>
+                                        <td class="border border-gray-300 p-2">${usage}</td>
+                                        <td class="border border-gray-300 p-2">${date}</td>
+                                     </tr>`;
+                        dataTable.insertAdjacentHTML('beforeend', row);
+                        document.getElementById('entryForm').reset();
+                        alert("新增成功!");
+                    } else {
+                        alert('新增失敗，訊息：' + (resData.message || '未知錯誤'));
+                    }
+                } catch (err) {
+                    alert("發生錯誤：" + err.message); // 完整顯示錯誤訊息
+                    console.error('Fetch error:', err);
+                }
+            });
+        </script>
+    <script>window.parent.postMessage({ action: "ready" }, "*"); 
+ 
+window.console = new Proxy(console, {
+  get(target, prop) {
+    if (['log', 'warn', 'error'].includes(prop)) {
+      return new Proxy(target[prop], {
+        apply(fn, thisArg, args) {
+          fn.apply(thisArg, args);
+          window.parent.postMessage({ action: 'console', 
+            type: prop, 
+            args: args.map((arg) => {
+              try {
+                return JSON.stringify(arg).replace(/^["']|["']$/g, '');
+              } catch (e) {
+                return arg;
+              }
+            }) 
+          }, '*');
+        }
+      });
+    }
+    return target[prop];
+  }
+});
+</script></body>
+    </html>
